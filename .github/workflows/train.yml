@@ -5,7 +5,7 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-  workflow_dispatch:  # allows manual trigger
+  workflow_dispatch:
 
 jobs:
   train-and-evaluate:
@@ -13,29 +13,51 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install transformers datasets scikit-learn \
-                      evaluate mlflow torch pandas numpy
+          pip install scikit-learn pandas numpy mlflow
+
+      - name: Check data files exist
+        run: |
+          echo "Checking data files..."
+          ls -la data/raw/
+          echo "✅ Data files found"
 
       - name: Run baseline models
         run: |
+          echo "Running baseline models..."
           python src/baseline.py
 
       - name: Run evaluation
         run: |
+          echo "Running evaluation..."
           python src/evaluate.py
 
-      - name: Upload results
-        uses: actions/upload-artifact@v3
+      - name: Show results
+        run: |
+          echo "Results:"
+          cat results/baseline_results.json
+          cat results/full_evaluation.json
+
+      - name: Upload results artifact
+        uses: actions/upload-artifact@v4
         with:
           name: evaluation-results
           path: results/
+          retention-days: 30
