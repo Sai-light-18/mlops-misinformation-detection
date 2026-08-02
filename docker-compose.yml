@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  
+  # Service 1 — Run baseline models
+  baseline:
+    build: .
+    container_name: mlops-baseline
+    volumes:
+      - ./data:/app/data
+      - ./results:/app/results
+    command: python src/baseline.py
+
+  # Service 2 — Run evaluation
+  evaluate:
+    build: .
+    container_name: mlops-evaluate
+    volumes:
+      - ./data:/app/data
+      - ./results:/app/results
+    command: python src/evaluate.py
+
+  # Service 3 — Streamlit app
+  streamlit:
+    build: .
+    container_name: mlops-streamlit
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+    command: streamlit run src/app.py --server.port=8501 --server.address=0.0.0.0
